@@ -1,0 +1,43 @@
+<launch>
+  <arg name="scan_topic" default="/scan"/>
+
+  <!-- twist_mux OWNS /cmd_vel -->
+  <node pkg="twist_mux" type="twist_mux" name="twist_mux" output="screen">
+    <rosparam file="$(find r2_ftg_safety)/config/twist_mux.yaml" command="load" />
+  </node>
+
+  <!-- Safety node: takes /cmd_vel_auto and produces /cmd_vel_safety -->
+  <node pkg="r2_ftg_safety" type="ftg_safety_override.py" name="ftg_safety_override" output="screen">
+    <param name="scan_topic" value="$(arg scan_topic)"/>
+    <param name="auto_cmd_topic" value="/cmd_vel_auto"/>
+    <param name="out_cmd_topic" value="/cmd_vel_safety"/>
+    <param name="enable_topic" value="/auto_enable"/>
+
+    <param name="stop_dist_m" value="0.55"/>
+    <param name="slow_dist_m" value="1.20"/>
+    <param name="front_fov_deg" value="60"/>
+    <param name="min_scale" value="0.20"/>
+    <param name="enable_steer_away" value="true"/>
+    <param name="max_steer_rad_s" value="1.5"/>
+    <param name="rate_hz" value="30"/>
+  </node>
+
+  <!-- R2 hold switch: publishes /teleop_lock + /auto_enable -->
+  <node pkg="r2_estop_joy" type="r2_mode_hold.py" name="r2_mode_hold" output="screen">
+    <param name="joy_topic" value="/joy"/>
+    <param name="r2_button_index" value="9"/>   <!-- YOUR DATA: buttons[9] -->
+    <param name="publish_hz" value="30"/>
+  </node>
+
+  <!-- Gate PP output: only passes /cmd_vel_auto_raw while R2 is held -->
+  <node pkg="r2_raceline_pp" type="cmdvel_gate.py" name="cmdvel_gate" output="screen">
+    <param name="enable_topic" value="/auto_enable"/>
+    <param name="in_topic" value="/cmd_vel_auto_raw"/>
+    <param name="out_topic" value="/cmd_vel_auto"/>
+    <param name="publish_zero_when_disabled" value="true"/>
+    <param name="rate_hz" value="30"/>
+  </node>
+</launch>
+
+
+

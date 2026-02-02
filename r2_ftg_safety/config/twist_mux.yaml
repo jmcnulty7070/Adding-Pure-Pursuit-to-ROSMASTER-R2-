@@ -1,0 +1,26 @@
+# r2_ftg_safety/config/twist_mux.yaml
+# twist_mux will publish /cmd_vel (the ONLY publisher to the driver)
+
+topics:
+  - name: safety
+    topic: /cmd_vel_safety
+    timeout: 0.25
+    priority: 100
+
+  - name: teleop
+    topic: /cmd_vel_teleop
+    timeout: 0.25
+    priority: 90
+
+  - name: auto
+    topic: /cmd_vel_auto
+    timeout: 0.25
+    priority: 50
+
+# When /teleop_lock is true, joystick is ignored (even if it publishes)
+locks:
+  - name: teleop_lock
+    topic: /teleop_lock
+    timeout: 0.6
+    priority: 255
+
