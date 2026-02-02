@@ -1,0 +1,12 @@
+<launch>
+  <!-- Laser-only bringup (NO base bringup include). Use this to avoid duplicate driver_node. -->
+  <arg name="lidar_type" default="$(env RPLIDAR_TYPE)"/> <!-- a1 or 4ROS -->
+  <include file="$(find rplidar_ros)/launch/rplidar.launch" if="$(eval arg('lidar_type') == 'a1')"/>
+  <include file="$(find ydlidar_ros_driver)/launch/TG.launch" if="$(eval arg('lidar_type') == '4ROS')"/>
+
+  <!-- Lidar TF -->
+  <node pkg="tf" type="static_transform_publisher" name="base_link_to_laser"
+        args="0.0435 5.258E-05 0.11 0 0 0 /base_link /laser 30" if="$(eval arg('lidar_type') == '4ROS')"/>
+  <node pkg="tf" type="static_transform_publisher" name="base_link_to_laser"
+        args="0.0435 5.258E-05 0.11 3.14 0 0 /base_link /laser 30" if="$(eval arg('lidar_type') == 'a1')"/>
+</launch>

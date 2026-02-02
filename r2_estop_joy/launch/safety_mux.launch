@@ -1,0 +1,55 @@
+<launch>
+  <!-- Use this launch for PP+FTG safety arbitration (teleop vs auto vs safety) -->
+
+  <arg name="scan_topic" default="/scan"/>
+  <arg name="enable_button" default="4"/> <!-- R1 default; override if needed -->
+  <arg name="estop_button" default="3"/>  <!-- your E-stop button -->
+
+  <!-- twist_mux OWNS /cmd_vel_out -->
+  <node pkg="twist_mux" type="twist_mux" name="twist_mux" output="screen">
+    <rosparam file="$(find r2_ftg_safety)/config/twist_mux.yaml" command="load" />
+  </node>
+
+  <!-- Deadman enable: publishes /pp_enable True only while R1 is held -->
+  <node pkg="r2_estop_joy" type="mode_hold.py" name="mode_hold" output="screen">
+    <param name="joy_topic" value="/joy"/>
+    <param name="enable_button" value="$(arg enable_button)"/>
+    <param name="topic" value="/pp_enable"/>
+    <param name="rate_hz" value="30"/>
+  </node>
+
+  <!-- Joystick E-stop: publishes twist_mux_msgs/Lock on /teleop_lock -->
+  <node pkg="r2_estop_joy" type="joy_estop_lock.py" name="joy_estop_lock" output="screen">
+    <param name="joy_topic" value="/joy"/>
+    <param name="lock_topic" value="/teleop_lock"/>
+    <param name="cmd_zero_topic" value="/cmd_vel_teleop"/>
+    <param name="estop_button" value="$(arg estop_button)"/>
+    <param name="hold_mode" value="true"/>
+    <param name="toggle_mode" value="false"/>
+    <param name="rate_hz" value="20"/>
+  </node>
+
+  <!-- Gate PP output: only passes /cmd_vel_auto_raw while /pp_enable is True -->
+  <node pkg="r2_raceline_pp" type="cmdvel_gate.py" name="cmdvel_gate" output="screen">
+    <param name="enable_topic" value="/pp_enable"/>
+    <param name="in_topic" value="/cmd_vel_auto_raw"/>
+    <param name="out_topic" value="/cmd_vel_auto"/>
+    <param name="publish_zero_when_disabled" value="true"/>
+    <param name="rate_hz" value="30"/>
+  </node>
+
+  <!-- Safety node: takes /cmd_vel_auto and produces /cmd_vel_safety -->
+  <node pkg="r2_ftg_safety" type="ftg_safety_override.py" name="ftg_safety_override" output="screen">
+    <param name="scan_topic" value="$(arg scan_topic)"/>
+    <param name="auto_cmd_topic" value="/cmd_vel_auto"/>
+    <param name="out_cmd_topic" value="/cmd_vel_safety"/>
+    <param name="enable_topic" value="/pp_enable"/>
+
+    <param name="stop_dist_m" value="0.55"/>
+    <param name="slow_dist_m" value="1.2"/>
+    <param name="min_scale" value="0.2"/>
+    <param name="front_fov_deg" value="60"/>
+    <param name="max_steer_rad_s" value="1.5"/>
+    <param name="rate_hz" value="30"/>
+  </node>
+</launch>

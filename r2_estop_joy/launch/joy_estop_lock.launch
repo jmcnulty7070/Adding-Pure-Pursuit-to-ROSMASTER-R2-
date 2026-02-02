@@ -1,0 +1,21 @@
+<launch>
+  <arg name="enable_button" default="4"/>
+  <arg name="estop_button" default="3"/>
+
+  <node pkg="r2_estop_joy" type="mode_hold.py" name="mode_hold" output="screen">
+    <param name="joy_topic" value="/joy"/>
+    <param name="enable_button" value="$(arg enable_button)"/>
+    <param name="topic" value="/pp_enable"/>
+    <param name="rate_hz" value="30"/>
+  </node>
+
+  <node pkg="r2_estop_joy" type="joy_estop_lock.py" name="joy_estop_lock" output="screen">
+    <param name="joy_topic" value="/joy"/>
+    <param name="lock_topic" value="/teleop_lock"/>
+    <param name="cmd_zero_topic" value="/cmd_vel_teleop"/>
+    <param name="estop_button" value="$(arg estop_button)"/>
+    <param name="hold_mode" value="true"/>
+    <param name="toggle_mode" value="false"/>
+    <param name="rate_hz" value="20"/>
+  </node>
+</launch>
