@@ -1,22 +1,17 @@
-# ROSMASTER R2 – Pure Pursuit Raceline (AMCL-Based Racing)
+# ROSMASTER R2 – Pure Pursuit Full Run Manual (Expanded)
+*(Pure Pursuit + AMCL + FTG Safety, F1TENTH-style racing)*
 
-**Full Run Manual – Pure Pursuit + AMCL + FTG Safety**
-
-This repository documents a **complete, repeatable workflow** for running the **Yahboom ROSMASTER R2** like a small F1TENTH-style racecar using:
-
-- AMCL localization (map frame)
-- Offline raceline generation from rosbag
-- Pure Pursuit path tracking
-- FTG safety override
-- `twist_mux` with joystick deadman
+This document is the **authoritative, end-to-end manual** for running the
+**Yahboom ROSMASTER R2** in closed-loop autonomous racing mode using **Pure Pursuit**
+with **AMCL localization**, **FTG safety**, and a **Y-button deadman**.
 
 ---
 
-## System Overview
+## System Information
 
-**Robot:** Yahboom ROSMASTER R2  
-**Computer:** Jetson Xavier NX  
-**ROS:** ROS1 Melodic (Python 2.7)
+- **Robot:** Yahboom ROSMASTER R2  
+- **Computer:** Jetson Xavier NX  
+- **ROS:** ROS1 Melodic (Python 2.7)
 
 **Workspace**
 ```text
@@ -24,21 +19,20 @@ This repository documents a **complete, repeatable workflow** for running the **
 ```
 Symlink:
 ```text
-/home/jetson/yahboomcar_ws
+/ home/jetson/yahboomcar_ws
 ```
 
 ---
 
-## Safety First
+## Core Safety Rule (Read This First)
 
-- Put the robot on a stand for first tests  
-- Keep a finger near the power switch  
-- Start slow  
-- **Never test near people, pets, stairs, or traffic**
+> **The robot may ONLY drive autonomously while the Y button is held.**
+>
+> Releasing Y immediately returns control to joystick teleop.
 
 ---
 
-## Big Picture – How Motion Flows
+## Motion Architecture (Mental Model)
 
 ```text
 Joystick        -> /cmd_vel_teleop  ┐
@@ -46,56 +40,152 @@ Pure Pursuit    -> /cmd_vel_auto    ├─> twist_mux -> /cmd_vel -> Motor Drive
 FTG Safety      -> /cmd_vel_safety  ┘
 ```
 
-**Priority inside `twist_mux` (highest wins):**
-1. FTG Safety  
-2. Pure Pursuit (**only when Y button is held**)  
-3. Teleop joystick  
+**twist_mux priority**
+1. FTG Safety (always wins)
+2. Pure Pursuit (only while holding Y)
+3. Teleop joystick
 
 ---
 
-## Rules You Must Follow
+## Phase Rules (DO NOT VIOLATE)
 
-❌ Mapping and localization never run together  
-❌ Pure Pursuit never runs during mapping  
-✅ RViz is viewer only  
-✅ When changing phases: **STOP old nodes → START new ones**
+- ❌ Cartographer and AMCL never run together
+- ❌ Pure Pursuit never runs during mapping
+- ❌ Two twist_mux nodes must never run together
+- ✅ RViz is visualization only
+- ✅ Stop old nodes before starting new phases
 
 ---
 
-## Environment Setup (Always Do This)
+## Phase 1 – Manual Drive (Teleop Only)
 
-Run in **every new terminal**:
+**Purpose**
+Verify hardware, joystick mapping, LiDAR, and motor driver.
+
+**Run**
 ```bash
-source /opt/ros/melodic/setup.bash
-source ~/ROS/R2/yahboomcar_ws/devel/setup.bash
+roslaunch yahboomcar_nav laser_bringup.launch
+```
+
+**Do NOT run**
+- Cartographer
+- AMCL
+- Pure Pursuit
+
+**RViz**
+- Fixed frame: `odom`
+- Displays: LaserScan, TF, RobotModel
+
+**Verify**
+```bash
+rostopic hz /scan
+rostopic echo -n 1 /cmd_vel
+```
+
+Robot must move smoothly with joystick input.
+
+---
+
+## Phase 2 – Mapping (Cartographer)
+
+**Purpose**
+Create a static map of the environment.
+
+**Stop**
+- AMCL
+- Pure Pursuit
+
+**Run**
+```bash
+roslaunch yahboomcar_nav yahboomcar_map.launch map_type:=cartographer
+```
+
+**RViz**
+- Fixed frame: `map`
+- Displays: Map, LaserScan, TF
+
+**Save Map**
+```bash
+mkdir -p ~/maps
+rosrun map_server map_saver -f ~/maps/home2
+```
+
+Stop Cartographer immediately after saving.
+
+---
+
+## Phase 3 – Localization (AMCL)
+
+**Purpose**
+Localize robot on the saved map.
+
+**Stop**
+- Cartographer
+
+**Run**
+```bash
+roslaunch r2_amcl_localization amcl_only.launch map:=/home/jetson/maps/home2.yaml
+```
+
+**RViz**
+- Fixed frame: `map`
+- Use **2D Pose Estimate ONCE**
+- Wait 10–20 seconds for convergence
+
+**Check**
+```bash
+rostopic hz /amcl_pose
 ```
 
 ---
 
-## Manual Control vs Autonomy
+## Phase 4 – Record a Clean Lap (Rosbag)
 
-- **Teleop:** Always allowed  
-- **Autonomy Enable (Deadman): HOLD Y BUTTON**
-- Releasing **Y** immediately returns control to joystick
+**Purpose**
+Capture a smooth lap for raceline generation.
+
+**Keep running**
+- Bringup
+- LiDAR
+- AMCL
+
+**Do NOT run**
+- Pure Pursuit
+
+**Record**
+```bash
+mkdir -p ~/bags
+rosbag record -O ~/bags/amcl_lap_01.bag   /amcl_pose /tf /tf_static /scan /map
+```
+
+Drive **one clean, smooth lap**. Avoid stops and jerks.
 
 ---
 
-## Mapping, Localization, Raceline, and Racing
+## Phase 5 – Raceline Generation (Offline)
 
-Follow the exact phase order:
+**Purpose**
+Convert rosbag into a smooth closed-loop path.
 
-1. Manual Drive (Teleop only)
-2. Mapping (Cartographer)
-3. Localization (AMCL)
-4. Record Lap (rosbag)
-5. Generate Raceline (offline)
-6. Visualize in RViz
-7. Race with Pure Pursuit + FTG
+```bash
+mkdir -p ~/paths
+
+rosrun r2_raceline_pp bag_to_raceline_yaml_amcl.py   --bag /home/jetson/bags/amcl_lap_01.bag   --pose /amcl_pose   --out /home/jetson/paths/raceline_amcl_01.yaml   --frame_id map   --every 1   --min_dist 0.02   --resample 0.05   --close_loop
+```
+
+**Mandatory edit**
+```bash
+nano ~/paths/raceline_amcl_01.yaml
+```
+
+- `frame_id: map`
+- First waypoint == last waypoint
 
 ---
 
-## Raceday Launch Order (Fast)
+## Phase 6 – Visualize Raceline (Dry Run)
 
+**Terminal order**
 ```text
 1. laser_bringup.launch
 2. amcl_only.launch
@@ -104,30 +194,51 @@ Follow the exact phase order:
 5. pure_pursuit.launch
 ```
 
-**HOLD Y → GO**
+**RViz**
+```bash
+roslaunch r2_raceline_pp amcl_raceline_rviz_fixed.launch
+```
+
+Confirm:
+- Path overlays map correctly
+- Robot arrow aligns with path
 
 ---
 
-## Pure Pursuit Tuning
+## Phase 7 – Autonomous Racing
 
-File:
-```text
-r2_raceline_pp/config/pure_pursuit.yaml
-```
+**Engage**
+- Hold **Y**
+- Robot follows raceline
+- FTG overrides when obstacles appear
+
+Release **Y** instantly to regain teleop control.
+
+---
+
+## Pure Pursuit Tuning Table
+
+| Speed (m/s) | Lookahead (m) |
+|------------|---------------|
+| 0.20 | 0.35–0.45 |
+| 0.30 | 0.45–0.60 |
+| 0.40 | 0.60–0.80 |
+| 0.50 | 0.80–1.00 |
+| 0.60 | 1.00–1.20 |
 
 Rules:
-- Oscillation → increase lookahead
-- Corner cutting → decrease lookahead
+- Wiggle → increase lookahead
+- Corner cut → decrease lookahead
 - Overshoot → reduce speed
 
 ---
 
-## Final Notes
+## Final Truths
 
-- Autonomy is **always gated by holding Y**
-- FTG safety always overrides Pure Pursuit
-- If anything behaves strangely, stop and verify **only one twist_mux is running**
+- Hold **Y** = autonomous
+- Release **Y** = safe
+- One mux only
+- One map at a time
+- One clean lap beats ten bad ones
 
----
-
-**This README is authoritative for this repository.**
+**End of Full Manual**
