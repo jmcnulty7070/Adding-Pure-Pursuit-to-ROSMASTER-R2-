@@ -1,0 +1,18 @@
+<launch>
+  <param name="use_sim_time" value="false"/>
+
+  <node name="joy_node" pkg="joy" type="joy_node" output="screen" respawn="false">
+    <param name="dev" value="/dev/input/js0"/>
+    <param name="deadzone" value="0.05"/>
+    <param name="autorepeat_rate" value="20.0"/>
+  </node>
+
+  <node name="yahboom_joy" pkg="yahboomcar_ctrl" type="yahboom_joy.py" output="screen">
+    <param name="linear_speed_limit" type="double" value="1.0"/>
+    <param name="angular_speed_limit" type="double" value="5.0"/>
+
+    <!-- make joystick feed twist_mux, not the driver directly -->
+    <remap from="cmd_vel" to="/cmd_vel_teleop"/>
+  </node>
+</launch>
+
