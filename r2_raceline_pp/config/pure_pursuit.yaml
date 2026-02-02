@@ -1,0 +1,148 @@
+# r2_raceline_pp/config/pure_pursuit.yaml
+#
+# Pure Pursuit tuning for small indoor closed-loop racing (15 ft x 15 ft).
+# Works best with:
+#   - raceline.yaml in MAP frame (frame_id: map)
+#   - points resampled at 0.05 m spacing
+#   - AMCL localization running (map->odom stable)
+#
+# Notes:
+# - Many PP nodes use slightly different param names.
+# - Keep this file; adjust only a few knobs: lookahead + speed + wheelbase + steering limits.
+
+################################################################################
+# Frames / inputs
+################################################################################
+
+# What frame the waypoints/path are expressed in.
+# If you generated from /amcl_pose, this should be "map".
+frame_id: map
+
+# Base frame used for vehicle pose (must exist in TF).
+# Most stacks: base_footprint. Some: base_link.
+base_frame: base_footprint
+base_frame_id: base_footprint
+
+# Topic inputs (set to match your stack)
+odom_topic: /odom
+pose_topic: /amcl_pose       # used by some PP nodes that can take map pose directly
+path_topic: /raceline_path   # if PP follows a nav_msgs/Path
+
+# File input (if PP reads YAML waypoints directly)
+waypoints_file: "$(find r2_raceline_pp)/config/raceline.yaml"
+raceline_yaml:  "$(find r2_raceline_pp)/config/raceline.yaml"
+
+################################################################################
+# Outputs (mux-only safety)
+################################################################################
+
+# PP should NOT publish directly to /cmd_vel if you're using twist_mux.
+# Publish to a nav topic that twist_mux can choose.
+cmd_topic: /cmd_vel_nav
+cmd_vel_topic: /cmd_vel_nav
+output_cmd_topic: /cmd_vel_nav
+
+# Optional debug topics (depends on PP node)
+publish_debug: true
+debug_topic: /pp_debug
+
+################################################################################
+# Closed-loop behavior (critical for racing)
+################################################################################
+
+# These are common names across different PP nodes.
+loop: true
+closed_loop: true
+wrap_path: true
+cyclic_path: true
+
+# If your PP node supports "restart at end" behavior
+restart_on_finish: true
+
+################################################################################
+# Lookahead tuning (THIS is your #1 knob)
+################################################################################
+
+# Indoor small track: start small.
+# If it oscillates/twitches: increase lookahead.
+# If it cuts corners too much: decrease slightly.
+lookahead_distance: 0.35      # meters (start here for 15x15ft)
+min_lookahead: 0.25
+max_lookahead: 0.60
+
+# Some nodes vary lookahead with speed:
+use_dynamic_lookahead: true
+lookahead_gain: 0.40          # lookahead = base + gain*speed
+lookahead_base: 0.20
+
+################################################################################
+# Speed control (keep conservative initially)
+################################################################################
+
+# For indoor racing: start 0.6–1.0 m/s depending on traction.
+max_speed: 0.90               # m/s
+min_speed: 0.25               # m/s
+cruise_speed: 0.70            # m/s (if supported)
+
+# Slow down in turns (curvature-based speed scaling)
+use_curvature_speed: true
+curvature_speed_scale: true
+curvature_gain: 1.5           # higher = slows more in turns
+min_turn_speed: 0.35          # m/s clamp
+
+# Accel limits (smoothness)
+max_accel: 1.5                # m/s^2
+max_decel: 2.0                # m/s^2
+
+################################################################################
+# Ackermann geometry / steering limits (MUST be correct-ish)
+################################################################################
+
+# Wheelbase in meters (front axle to rear axle).
+# Put your real number here; wrong wheelbase = bad tracking.
+wheelbase: 0.26
+
+# Steering constraints
+max_steer_angle: 0.45         # radians (~25.8 deg)  adjust to your car
+min_steer_angle: -0.45
+
+# Some PP nodes output angular.z for /cmd_vel, others output a steering angle.
+# If your driver expects angular.z as yaw-rate, PP will compute it.
+# If your driver expects steering angle directly, you may need a different output mode.
+output_mode: cmd_vel          # "cmd_vel" or "steer_angle" (if supported)
+
+################################################################################
+# Waypoint handling / smoothing
+################################################################################
+
+# Your raceline is already fixed-spaced; keep interpolation on.
+use_interpolation: true
+interpolate: true
+
+# Optional: drop points behind the car or skip points too near
+prune_behind: true
+min_waypoint_dist: 0.05       # should match your resample step
+
+# If supported: search window ahead along the path
+search_ahead_distance: 1.50   # meters
+max_waypoint_index_jump: 200  # protects against teleporting in loop
+
+################################################################################
+# Goal / finish behavior
+################################################################################
+
+# For racing: never "stop at end"
+stop_at_goal: false
+goal_tolerance: 0.20
+
+################################################################################
+# Debug / visualization
+################################################################################
+
+publish_target_point: true
+target_point_topic: /pp_target_point
+
+publish_lookahead_circle: true
+lookahead_marker_topic: /pp_lookahead_marker
+
+publish_path: false           # you already publish /raceline_path separately

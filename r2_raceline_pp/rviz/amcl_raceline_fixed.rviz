@@ -1,0 +1,85 @@
+Panels:
+  - Class: rviz/Displays
+    Name: Displays
+  - Class: rviz/Selection
+    Name: Selection
+  - Class: rviz/Tool Properties
+    Name: Tool Properties
+  - Class: rviz/Views
+    Name: Views
+  - Class: rviz/Time
+    Name: Time
+
+Visualization Manager:
+  Class: ""
+  Enabled: true
+  Global Options:
+    Fixed Frame: map
+    Frame Rate: 30
+
+  Tools:
+    - Class: rviz/Interact
+    - Class: rviz/MoveCamera
+    - Class: rviz/Select
+    - Class: rviz/FocusCamera
+    - Class: rviz/Measure
+    - Class: rviz/SetInitialPose
+      Topic: /initialpose
+      X Std Dev: 0.25
+      Y Std Dev: 0.25
+      Theta Std Dev: 0.35
+
+  Displays:
+    - Name: Grid
+      Class: rviz/Grid
+      Enabled: true
+      Plane: XY
+      Alpha: 0.2
+      Cell Size: 1
+      Plane Cell Count: 40
+
+    - Name: Map
+      Class: rviz/Map
+      Enabled: true
+      Topic: /map
+      Alpha: 0.8
+
+    - Name: LaserScan
+      Class: rviz/LaserScan
+      Enabled: true
+      Topic: /scan
+      Size (Pixels): 3
+
+    - Name: TF
+      Class: rviz/TF
+      Enabled: true
+      Show Arrows: true
+      Show Axes: true
+      Show Names: false
+
+    - Name: RobotModel
+      Class: rviz/RobotModel
+      Enabled: true
+      Robot Description: robot_description
+
+    - Name: AMCL Pose (correct type)
+      Class: rviz/PoseWithCovariance
+      Enabled: true
+      Topic: /amcl_pose
+
+    - Name: Raceline Path
+      Class: rviz/Path
+      Enabled: true
+      Topic: /raceline_path
+      Line Style: Lines
+      Line Width: 0.03
+
+Views:
+  Current:
+    Class: rviz/TopDownOrtho
+    Name: Current View
+    Angle: 0
+    Scale: 50
+    X: 0
+    Y: 0
+

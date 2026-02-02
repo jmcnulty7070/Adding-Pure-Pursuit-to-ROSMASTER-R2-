@@ -1,0 +1,39 @@
+Panels:
+  - Class: rviz/Displays
+    Name: Displays
+  - Class: rviz/Selection
+    Name: Selection
+  - Class: rviz/Tool Properties
+    Name: Tool Properties
+  - Class: rviz/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Name: Grid
+      Class: rviz/Grid
+      Enabled: true
+    - Name: TF
+      Class: rviz/TF
+      Enabled: true
+    - Name: LaserScan
+      Class: rviz/LaserScan
+      Enabled: true
+      Topic: /scan
+    - Name: Raceline
+      Class: rviz/Path
+      Enabled: true
+      Topic: /raceline_path
+  Global Options:
+    Fixed Frame: map
+  Tools:
+    - Class: rviz/Interact
+    - Class: rviz/MoveCamera
+    - Class: rviz/Select
+    - Class: rviz/FocusCamera
+    - Class: rviz/Measure
+    - Class: rviz/SetInitialPose
+    - Class: rviz/SetGoal
+  Views:
+    Current:
+      Class: rviz/Orbit

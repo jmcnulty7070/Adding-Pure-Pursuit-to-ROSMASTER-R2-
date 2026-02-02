@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="rviz" type="rviz" name="rviz" output="screen"
+        args="-d $(find r2_raceline_pp)/rviz/amcl_raceline_fixed.rviz"/>
+</launch>

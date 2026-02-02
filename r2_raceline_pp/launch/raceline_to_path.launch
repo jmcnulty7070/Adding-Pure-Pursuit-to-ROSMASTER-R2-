@@ -1,0 +1,53 @@
+<launch>
+
+  <!-- Raceline YAML file (MUST be absolute path) -->
+
+  <arg name="raceline"
+
+       default="$(find r2_raceline_pp)/config/raceline.yaml"/>
+
+ 
+
+  <!-- Output topic -->
+
+  <arg name="path_topic" default="/raceline_path"/>
+
+ 
+
+  <!-- Frame -->
+
+  <arg name="frame_id" default="map"/>
+
+ 
+
+  <!-- Publish rate -->
+
+  <arg name="rate_hz" default="1.0"/>
+
+ 
+
+  <!-- Publish raceline as nav_msgs/Path -->
+
+  <node pkg="r2_raceline_pp"
+
+        type="raceline_to_path.py"
+
+        name="raceline_to_path"
+
+        output="screen">
+
+ 
+
+    <param name="path_yaml" value="$(arg raceline)"/>
+
+    <param name="topic"     value="$(arg path_topic)"/>
+
+    <param name="frame_id"  value="$(arg frame_id)"/>
+
+    <param name="rate_hz"   value="$(arg rate_hz)"/>
+
+ 
+
+  </node>
+
+</launch>

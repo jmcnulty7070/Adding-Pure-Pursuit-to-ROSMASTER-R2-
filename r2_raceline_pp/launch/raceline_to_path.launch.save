@@ -1,0 +1,10 @@
+launch>
+  <arg name="raceline_yaml" default="$(find r2_raceline_pp)/config/raceline.yaml"/>
+
+  <node pkg="r2_raceline_pp" type="raceline_to_path.py" name="raceline_to_path" output="screen">
+    <param name="path_yaml" value="$(arg raceline_yaml)"/>
+    <param name="frame_id" value="map"/>
+    <param name="topic" value="/raceline_path"/>
+    <param name="rate_hz" value="1.0"/>
+  </node>
+</launch>
