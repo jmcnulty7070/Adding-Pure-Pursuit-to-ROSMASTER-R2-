@@ -1,0 +1,24 @@
+# yahboomcar_nav/config/twist_mux.yaml
+# Priority: higher number wins.
+# Output topic: /cmd_vel (remapped from cmd_vel_out in the launch file)
+
+topics:
+  - name: safety
+    topic: /cmd_vel_safety
+    timeout: 0.2
+    priority: 100
+
+  - name: autonomy
+    topic: /cmd_vel_auto_gated
+    timeout: 0.2
+    priority: 50
+
+  - name: teleop
+    topic: /cmd_vel_teleop
+    timeout: 0.5
+    priority: 10
+
+# IMPORTANT (ROS Melodic twist_mux):
+# Provide locks param even if you are not using locks, otherwise twist_mux can FATAL.
+locks: []
+

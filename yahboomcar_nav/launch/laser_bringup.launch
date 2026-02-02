@@ -1,0 +1,55 @@
+<launch>
+    <!-- Yahboom ROSMASTER R2 Laser Bringup + Twist Mux + Autonomy Deadman Gate (Option B) -->
+
+    <arg name="robot_type" value="$(env ROBOT_TYPE)" doc="robot_type [X1,X3,X3plus,R2,X7]"/>
+    <arg name="nav_use_rotvel" default="true"/>
+
+    <!-- LiDAR selection -->
+    <arg name="lidar_type" value="$(env RPLIDAR_TYPE)" doc="lidar_type [a1,4ROS]"/>
+
+    <!-- LiDAR drivers -->
+    <include file="$(find rplidar_ros)/launch/rplidar.launch" if="$(eval arg('lidar_type') == 'a1')"/>
+    <include file="$(find ydlidar_ros_driver)/launch/TG.launch" if="$(eval arg('lidar_type') == '4ROS')"/>
+
+    <!-- Base bringup (driver_node, joy, imu, etc.) -->
+    <include file="$(find yahboomcar_bringup)/launch/bringup.launch">
+        <arg name="nav_use_rotvel" value="$(arg nav_use_rotvel)"/>
+    </include>
+
+    <!-- ========================================================= -->
+    <!-- Option B: Gate AUTONOMY with a "deadman" button (PS2 A)    -->
+    <!-- - Input:  /cmd_vel_auto                                   -->
+    <!-- - Output: /cmd_vel_auto_gated                             -->
+    <!-- If A is not held -> publish zeros -> autonomy is blocked  -->
+    <!-- ========================================================= -->
+    <node pkg="yahboomcar_nav" type="cmd_vel_auto_gate.py" name="cmd_vel_auto_gate" output="screen">
+        <!-- PS2 A is commonly buttons[0] -->
+        <param name="deadman_button_index" value="0"/>
+        <param name="require_deadman" value="true"/>
+        <param name="joy_timeout" value="0.75"/>
+        <param name="auto_timeout" value="0.50"/>
+        <param name="rate" value="20.0"/>
+
+        <param name="in_auto_topic" value="/cmd_vel_auto"/>
+        <param name="out_auto_topic" value="/cmd_vel_auto_gated"/>
+        <param name="joy_topic" value="/joy"/>
+    </node>
+
+    <!-- ========================================================= -->
+    <!-- twist_mux: Safety > Autonomy (gated) > Teleop             -->
+    <!-- - Inputs: /cmd_vel_safety, /cmd_vel_auto_gated, /cmd_vel_teleop -->
+    <!-- - Output: /cmd_vel  (driver_node subscribes to /cmd_vel)  -->
+    <!-- ========================================================= -->
+    <node pkg="twist_mux" type="twist_mux" name="twist_mux" output="screen">
+        <!-- Load parameters directly under /twist_mux -->
+        <rosparam command="load" file="$(find yahboomcar_nav)/config/twist_mux.yaml"/>
+        <!-- twist_mux publishes cmd_vel_out by default -->
+        <remap from="cmd_vel_out" to="/cmd_vel"/>
+    </node>
+
+    <!-- Lidar coordinate frame -->
+    <node pkg="tf" type="static_transform_publisher" name="base_link_to_laser"
+          args="0.0435 5.258E-05 0.11 0 0 0 /base_link /laser 30" if="$(eval arg('lidar_type') == '4ROS')"/>
+    <node pkg="tf" type="static_transform_publisher" name="base_link_to_laser"
+          args="0.0435 5.258E-05 0.11 3.14 0 0 /base_link /laser 30" if="$(eval arg('lidar_type') == 'a1')"/>
+</launch>

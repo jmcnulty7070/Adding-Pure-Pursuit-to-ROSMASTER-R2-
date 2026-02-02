@@ -1,0 +1,19 @@
+<launch>
+    <arg name="robot_type" value="$(env ROBOT_TYPE)" doc="robot_type [X1,X3,X3plus,R2,X7]"/>
+    <arg name="camera_type" value="$(env CAMERA_TYPE)" doc="camera_type [astrapro,astraplus]"/>
+    <arg name="nav_use_rotvel" default="true"/>
+    <!-- 驱动模块 || driver module -->
+    <arg name="lidar_type" value="$(env RPLIDAR_TYPE)" doc="lidar_type [a1,4ROS]"/>
+    <include file="$(find rplidar_ros)/launch/rplidar.launch" if="$(eval arg('lidar_type') == 'a1')"/>
+    <include file="$(find ydlidar_ros_driver)/launch/TG.launch" if="$(eval arg('lidar_type') == '4ROS')"/>
+    <include file="$(find astra_camera)/launch/astrapro.launch" if="$(eval arg('camera_type') == 'astrapro')"/>
+    <include file="$(find astra_camera)/launch/astraproplus.launch" if="$(eval arg('camera_type') == 'astraplus')"/>
+    <include file="$(find yahboomcar_bringup)/launch/bringup.launch">
+        <arg name="nav_use_rotvel" value="$(arg nav_use_rotvel)"/>
+    </include>
+    <!-- 激光雷达的坐标系 || Lidar coordinate system -->
+    <node pkg="tf" type="static_transform_publisher" name="base_link_to_laser"
+          args="0.0435 5.258E-05 0.11 0 0 0  /base_link /laser 30" if="$(eval arg('lidar_type') == '4ROS')"/>
+    <node pkg="tf" type="static_transform_publisher" name="base_link_to_laser"
+          args="0.0435 5.258E-05 0.11 3.14 0 0  /base_link /laser 30" if="$(eval arg('lidar_type') == 'a1')"/>
+</launch>
