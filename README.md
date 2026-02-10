@@ -247,7 +247,7 @@ roslaunch r2_estop_joy safety_mux.launch
 
 **Terminal 5 — Pure Pursuit**
 ```bash
-roslaunch r2_raceline_pp pure_pursuit.launch   raceline_yaml:=/home/jetson/paths/raceline_amcl_01.yaml
+roslaunch r2_raceline_pp pure_pursuit.launch   raceline:=/home/jetson/paths/raceline_amcl_01.yaml
 ```
 
 ### RViz View
