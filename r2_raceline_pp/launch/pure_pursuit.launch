@@ -1,8 +1,8 @@
 <launch>
-  <arg name="raceline_yaml" default="$(find r2_raceline_pp)/config/raceline.yaml"/>
+  <arg name="raceline" default="$(find r2_raceline_pp)/config/raceline.yaml"/>
 
   <node pkg="r2_raceline_pp" type="pure_pursuit_cmdvel.py" name="pure_pursuit" output="screen">
-    <param name="path_yaml" value="$(arg raceline_yaml)"/>
+    <param name="path_yaml" value="$(arg raceline)"/>
     <param name="frame_id" value="map"/>
     <param name="base_frame" value="base_link"/>
 
