@@ -1,6 +1,7 @@
 # Adding Pure Pursuit to ROSMASTER R2 to act as f1tenth car 
 ## Full Run Manual (Pure Pursuit + AMCL)  
 ### F1TENTH-Style Closed-Loop Racing Workflow
+<img width="2017" height="1513" alt="image" src="https://github.com/user-attachments/assets/41765e86-894b-4544-90a0-67b911d0736f" />
 
 ---
 
